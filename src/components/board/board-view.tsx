@@ -13,6 +13,7 @@ import {
 } from "@dnd-kit/core";
 import { useCalendarItems } from "@/hooks/use-calendar-items";
 import { useCategorizationRules } from "@/hooks/use-categorization-rules";
+import { useHiddenSubjects } from "@/hooks/use-hidden-subjects";
 import { groupByCourse, groupByDueDate } from "@/lib/board-utils";
 import { categorizeItems } from "@/lib/categorization";
 import { BoardSwimlane } from "./board-swimlane";
@@ -28,6 +29,7 @@ interface BoardViewProps {
 export function BoardView({ viewMode = "by_course" }: BoardViewProps) {
   const { items, isLoading, updateItem, deleteItem } = useCalendarItems();
   const { rules, createRule } = useCategorizationRules();
+  const { isHidden, toggleSubject } = useHiddenSubjects();
   const [activeItem, setActiveItem] = useState<CalendarItem | null>(null);
   const [editItem, setEditItem] = useState<CalendarItem | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
@@ -147,10 +149,15 @@ export function BoardView({ viewMode = "by_course" }: BoardViewProps) {
     return <BoardEmptyState />;
   }
 
+  const visibleItems =
+    viewMode === "this_week"
+      ? enrichedItems.filter((item) => !isHidden(item.course_name ?? ""))
+      : enrichedItems;
+
   const grouped =
     viewMode === "this_week"
-      ? groupByDueDate(enrichedItems)
-      : groupByCourse(enrichedItems);
+      ? groupByDueDate(visibleItems)
+      : groupByCourse(visibleItems);
 
   return (
     <>
@@ -171,6 +178,10 @@ export function BoardView({ viewMode = "by_course" }: BoardViewProps) {
               onEdit={handleEdit}
               onConfirmSuggestion={handleConfirmSuggestion}
               suggestions={suggestions}
+              {...(viewMode === "by_course" && {
+                isHidden: isHidden(groupName),
+                onToggleVisibility: toggleSubject,
+              })}
             />
           ))}
         </div>
