@@ -6,7 +6,8 @@ import {
   convertAssignmentToCalendarItem,
   convertEventToCalendarItem,
 } from "@/lib/integrations/canvas";
-import type { CanvasSubmission } from "@/types";
+import { applyRulesToInput } from "@/lib/categorization";
+import type { CanvasSubmission, CategorizationRule } from "@/types";
 
 export async function POST() {
   try {
@@ -150,6 +151,14 @@ export async function POST() {
       }
     }
 
+    // Retroactively categorize existing uncategorized items using all rules
+    const { data: allRules } = await supabase
+      .from("categorization_rules")
+      .select("*")
+      .eq("user_id", user.id);
+
+    await categorizeExistingItems(supabase, user.id, (allRules || []) as CategorizationRule[]);
+
     // Log the sync
     await supabase.from("sync_logs").insert({
       user_id: user.id,
@@ -172,5 +181,30 @@ export async function POST() {
       { error: error instanceof Error ? error.message : "Sync failed" },
       { status: 500 }
     );
+  }
+}
+
+async function categorizeExistingItems(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  rules: CategorizationRule[]
+) {
+  const { data: uncategorized } = await supabase
+    .from("calendar_items")
+    .select("id, title, source_id")
+    .eq("user_id", userId)
+    .is("course_name", null);
+
+  if (!uncategorized || uncategorized.length === 0) return;
+
+  for (const item of uncategorized) {
+    const input = { title: item.title, source_id: item.source_id } as { title: string; source_id?: string | null; course_name?: string | null };
+    applyRulesToInput(input as any, rules);
+    if (input.course_name) {
+      await supabase
+        .from("calendar_items")
+        .update({ course_name: input.course_name })
+        .eq("id", item.id);
+    }
   }
 }

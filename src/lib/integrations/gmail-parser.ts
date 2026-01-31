@@ -1,4 +1,5 @@
 import type { CreateCalendarItemInput } from "@/types";
+import { inferCourseFromText } from "@/lib/categorization";
 
 const GMAIL_API_BASE = "https://gmail.googleapis.com/v1";
 
@@ -133,7 +134,12 @@ export function parseCanvasEmail(message: GmailMessage): CreateCalendarItemInput
 
   // Extract course name from subject or body
   const courseMatch = subject.match(/\[(.+?)\]/) || body.match(/course[:\s]+(.+?)(?:\n|<)/i);
-  const courseName = courseMatch ? courseMatch[1].trim() : null;
+  let courseName = courseMatch ? courseMatch[1].trim() : null;
+
+  // Fallback: try regex heuristics on subject and body
+  if (!courseName) {
+    courseName = inferCourseFromText(subject) || inferCourseFromText(body);
+  }
 
   // Clean up title
   title = title.replace(/\[.+?\]/g, "").replace(/^(Re|Fwd):\s*/i, "").trim();

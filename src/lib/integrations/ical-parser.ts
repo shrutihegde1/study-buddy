@@ -1,5 +1,6 @@
 import ICAL from "ical.js";
 import type { CreateCalendarItemInput, ItemType } from "@/types";
+import { inferCourseFromText } from "@/lib/categorization";
 
 interface ParsedEvent {
   uid: string;
@@ -128,6 +129,16 @@ export function extractCourseName(event: ParsedEvent): string | null {
   const bracketMatch = event.summary.match(/^\[([^\]]+)\]/);
   if (bracketMatch) {
     return bracketMatch[1].trim();
+  }
+
+  // Fallback: try regex heuristics (e.g. "CS 201", "MATH101")
+  const inferred = inferCourseFromText(event.summary);
+  if (inferred) return inferred;
+
+  // Also try description
+  if (event.description) {
+    const fromDesc = inferCourseFromText(event.description);
+    if (fromDesc) return fromDesc;
   }
 
   return null;

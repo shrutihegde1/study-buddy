@@ -1,4 +1,4 @@
-import type { CalendarItem, CategorizationRule } from "@/types";
+import type { CalendarItem, CategorizationRule, CreateCalendarItemInput } from "@/types";
 
 /**
  * Match a single item against user-defined rules.
@@ -55,6 +55,48 @@ export function inferCourseFromText(text: string): string | null {
   }
 
   return null;
+}
+
+/**
+ * Server-side: apply rules to a CreateCalendarItemInput (used during sync).
+ * Mutates the item's course_name if a match is found and it's currently null.
+ */
+export function applyRulesToInput(
+  item: CreateCalendarItemInput,
+  rules: CategorizationRule[]
+): void {
+  if (item.course_name) return;
+
+  for (const rule of rules) {
+    switch (rule.match_type) {
+      case "title_contains":
+        if (item.title.toLowerCase().includes(rule.match_value.toLowerCase())) {
+          item.course_name = rule.course_name;
+          return;
+        }
+        break;
+      case "title_prefix":
+        if (item.title.toLowerCase().startsWith(rule.match_value.toLowerCase())) {
+          item.course_name = rule.course_name;
+          return;
+        }
+        break;
+      case "source_id_prefix":
+        if (item.source_id?.startsWith(rule.match_value)) {
+          item.course_name = rule.course_name;
+          return;
+        }
+        break;
+      case "context_code":
+        break;
+    }
+  }
+
+  // Fallback: try heuristic inference from title
+  const inferred = inferCourseFromText(item.title);
+  if (inferred) {
+    item.course_name = inferred;
+  }
 }
 
 /**

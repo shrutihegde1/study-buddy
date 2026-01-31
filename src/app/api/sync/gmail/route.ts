@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { parseCanvasNotifications } from "@/lib/integrations/gmail-parser";
+import { applyRulesToInput } from "@/lib/categorization";
+import type { CategorizationRule } from "@/types";
 
 export async function POST() {
   try {
@@ -27,6 +29,14 @@ export async function POST() {
 
     const accessToken = session.provider_token;
 
+    // Fetch user's categorization rules to apply during sync
+    const { data: rules } = await supabase
+      .from("categorization_rules")
+      .select("*")
+      .eq("user_id", user.id);
+
+    const userRules = (rules || []) as CategorizationRule[];
+
     // Parse Canvas notifications from Gmail
     const items = await parseCanvasNotifications(accessToken);
 
@@ -34,6 +44,11 @@ export async function POST() {
     const errors: string[] = [];
 
     for (const item of items) {
+      // Apply categorization rules if course_name is still null
+      if (!item.course_name) {
+        applyRulesToInput(item, userRules);
+      }
+
       // Upsert the item
       const { error } = await supabase.from("calendar_items").upsert(
         {
@@ -51,6 +66,9 @@ export async function POST() {
         itemsSynced++;
       }
     }
+
+    // Retroactively categorize existing uncategorized items
+    await categorizeExistingItems(supabase, user.id, userRules);
 
     // Log the sync
     await supabase.from("sync_logs").insert({
@@ -73,5 +91,30 @@ export async function POST() {
       { error: error instanceof Error ? error.message : "Sync failed" },
       { status: 500 }
     );
+  }
+}
+
+async function categorizeExistingItems(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  rules: CategorizationRule[]
+) {
+  const { data: uncategorized } = await supabase
+    .from("calendar_items")
+    .select("id, title, source_id")
+    .eq("user_id", userId)
+    .is("course_name", null);
+
+  if (!uncategorized || uncategorized.length === 0) return;
+
+  for (const item of uncategorized) {
+    const input = { title: item.title, source_id: item.source_id } as { title: string; source_id?: string | null; course_name?: string | null };
+    applyRulesToInput(input as any, rules);
+    if (input.course_name) {
+      await supabase
+        .from("calendar_items")
+        .update({ course_name: input.course_name })
+        .eq("id", item.id);
+    }
   }
 }
