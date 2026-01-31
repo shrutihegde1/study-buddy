@@ -52,6 +52,7 @@ export function SettingsForm() {
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [canvasMethod, setCanvasMethod] = useState<"calendar" | "api">("calendar");
   const [syncMessage, setSyncMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [showAddApiToken, setShowAddApiToken] = useState(false);
 
   // Update form values when profile loads
   useEffect(() => {
@@ -326,7 +327,9 @@ export function SettingsForm() {
                 <div className="flex-1">
                   <p className="font-medium text-green-900">Connected</p>
                   <p className="text-sm text-green-700">
-                    {profile?.canvas_token ? (
+                    {profile?.canvas_token && profile?.canvas_calendar_url ? (
+                      <>via Calendar URL + API Token</>
+                    ) : profile?.canvas_token ? (
                       <>via API Token ({profile.canvas_base_url})</>
                     ) : (
                       <>via Calendar URL</>
@@ -369,6 +372,77 @@ export function SettingsForm() {
                   <p className="text-xs text-gray-500 mb-1">Calendar URL</p>
                   <p className="text-sm font-mono text-gray-700 break-all">
                     {profile.canvas_calendar_url.substring(0, 60)}...
+                  </p>
+                </div>
+              )}
+
+              {/* Show option to add API token when only calendar URL is connected */}
+              {profile?.canvas_calendar_url && !profile?.canvas_token && (
+                <div className="border rounded-lg">
+                  <button
+                    onClick={() => setShowAddApiToken(!showAddApiToken)}
+                    className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Key className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-medium">Add API Token for better course matching</span>
+                    </div>
+                    {showAddApiToken ? (
+                      <ChevronUp className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                    )}
+                  </button>
+
+                  {showAddApiToken && (
+                    <div className="border-t px-4 py-4 space-y-4">
+                      <p className="text-sm text-gray-600">
+                        Adding a Canvas API token allows us to look up course names for your calendar items,
+                        so they appear under proper course names instead of &quot;Uncategorized&quot;.
+                      </p>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="canvasUrlAdd">Canvas URL</Label>
+                        <Input
+                          id="canvasUrlAdd"
+                          value={canvasBaseUrl}
+                          onChange={(e) => setCanvasBaseUrl(e.target.value)}
+                          placeholder="https://yourschool.instructure.com"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="canvasTokenAdd">Access Token</Label>
+                        <Input
+                          id="canvasTokenAdd"
+                          type="password"
+                          value={canvasToken}
+                          onChange={(e) => setCanvasToken(e.target.value)}
+                          placeholder="Paste your Canvas access token"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Go to Canvas &gt; Account &gt; Settings &gt; Approved Integrations &gt; New Access Token
+                        </p>
+                      </div>
+
+                      <Button
+                        onClick={handleSaveCanvasApi}
+                        disabled={isUpdating || !canvasBaseUrl || !canvasToken}
+                        size="sm"
+                      >
+                        {isUpdating ? "Saving..." : "Save API Token"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Show API token status when both are configured */}
+              {profile?.canvas_token && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">API Token</p>
+                  <p className="text-sm text-gray-700">
+                    Connected to {profile.canvas_base_url}
                   </p>
                 </div>
               )}

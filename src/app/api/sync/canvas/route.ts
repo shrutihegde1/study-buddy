@@ -191,14 +191,14 @@ async function categorizeExistingItems(
 ) {
   const { data: uncategorized } = await supabase
     .from("calendar_items")
-    .select("id, title, source_id")
+    .select("id, title, source_id, source_url")
     .eq("user_id", userId)
     .is("course_name", null);
 
   if (!uncategorized || uncategorized.length === 0) return;
 
   for (const item of uncategorized) {
-    const input = { title: item.title, source_id: item.source_id } as { title: string; source_id?: string | null; course_name?: string | null };
+    const input = { title: item.title, source_id: item.source_id, source_url: item.source_url } as { title: string; source_id?: string | null; source_url?: string | null; course_name?: string | null };
     applyRulesToInput(input as any, rules);
     if (input.course_name) {
       await supabase

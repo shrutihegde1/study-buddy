@@ -26,7 +26,10 @@ export function applyRules(
         }
         break;
       case "context_code":
-        // context_code rules are handled during sync; skip here
+        // Check if item's source_url contains the context code
+        if (item.source_url?.includes(rule.match_value)) {
+          return rule.course_name;
+        }
         break;
     }
   }
@@ -88,6 +91,11 @@ export function applyRulesToInput(
         }
         break;
       case "context_code":
+        // Check if item's source_url contains the context code
+        if (item.source_url?.includes(rule.match_value)) {
+          item.course_name = rule.course_name;
+          return;
+        }
         break;
     }
   }
@@ -96,6 +104,12 @@ export function applyRulesToInput(
   const inferred = inferCourseFromText(item.title);
   if (inferred) {
     item.course_name = inferred;
+    return;
+  }
+
+  // District-level calendar items (account_ context) → "School Schedule"
+  if (item.source_url?.includes("include_contexts=account_")) {
+    item.course_name = "School Schedule";
   }
 }
 
@@ -124,6 +138,12 @@ export function categorizeItems(
     const inferred = inferCourseFromText(item.title);
     if (inferred) {
       suggestions.set(item.id, inferred);
+      continue;
+    }
+
+    // District-level calendar items → "School Schedule"
+    if (item.source_url?.includes("include_contexts=account_")) {
+      suggestions.set(item.id, "School Schedule");
     }
   }
 

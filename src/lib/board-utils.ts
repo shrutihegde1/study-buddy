@@ -23,11 +23,15 @@ export function groupByCourse(
     if (!groups[key]) groups[key] = [];
     groups[key].push(item);
   }
-  // Sort keys alphabetically, but keep "Uncategorized" last
+  // Sort keys alphabetically, but keep "School Schedule" and "Uncategorized" last
   const sorted: Record<string, CalendarItem[]> = {};
+  const tailKeys = ["School Schedule", "Uncategorized"];
   const keys = Object.keys(groups).sort((a, b) => {
-    if (a === "Uncategorized") return 1;
-    if (b === "Uncategorized") return -1;
+    const aIdx = tailKeys.indexOf(a);
+    const bIdx = tailKeys.indexOf(b);
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return 1;
+    if (bIdx !== -1) return -1;
     return a.localeCompare(b);
   });
   for (const key of keys) {

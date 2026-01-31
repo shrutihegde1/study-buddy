@@ -189,10 +189,10 @@ async function categorizeExistingItems(
   rules: CategorizationRule[],
   courseCodeMap: Map<string, string>
 ) {
-  // Fetch all uncategorized items
+  // Fetch all uncategorized items (include source_url for context_code matching)
   const { data: uncategorized } = await supabase
     .from("calendar_items")
-    .select("id, title, source_id")
+    .select("id, title, source_id, source_url")
     .eq("user_id", userId)
     .is("course_name", null);
 
@@ -202,6 +202,7 @@ async function categorizeExistingItems(
     const input = {
       title: item.title,
       source_id: item.source_id,
+      source_url: item.source_url,
       course_name: null as string | null,
     } as CreateCalendarItemInput;
 
