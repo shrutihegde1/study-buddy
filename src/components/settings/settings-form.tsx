@@ -87,7 +87,6 @@ export function SettingsForm() {
       await updateProfile({
         canvas_token: canvasToken || undefined,
         canvas_base_url: canvasBaseUrl || undefined,
-        canvas_calendar_url: null, // Clear calendar URL when using API
       });
       setCanvasToken("");
       setSaveStatus("success");
@@ -101,8 +100,6 @@ export function SettingsForm() {
     try {
       await updateProfile({
         canvas_calendar_url: canvasCalendarUrl || undefined,
-        canvas_token: null, // Clear API token when using calendar
-        canvas_base_url: null,
       });
       setSaveStatus("success");
       setTimeout(() => setSaveStatus("idle"), 3000);

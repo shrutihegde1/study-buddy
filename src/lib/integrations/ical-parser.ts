@@ -125,8 +125,8 @@ export function extractCourseName(event: ParsedEvent): string | null {
     return colonMatch[1].trim();
   }
 
-  // Try to extract from summary (often formatted as "[Course Name] Assignment Name")
-  const bracketMatch = event.summary.match(/^\[([^\]]+)\]/);
+  // Try to extract from summary — brackets anywhere: "[Course Name]" or "Title [CODE]"
+  const bracketMatch = event.summary.match(/\[([^\]]+)\]/);
   if (bracketMatch) {
     return bracketMatch[1].trim();
   }
