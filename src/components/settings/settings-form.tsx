@@ -18,7 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TIMEZONES } from "@/lib/constants";
-import { Check, AlertCircle, ChevronDown, ChevronUp, LogOut, Link, Key, RefreshCw } from "lucide-react";
+import { Check, AlertCircle, ChevronDown, ChevronUp, LogOut, Link, Key, RefreshCw, Trash2 } from "lucide-react";
 import { useSync } from "@/hooks/use-sync";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -58,6 +58,9 @@ export function SettingsForm() {
   const [syncMessage, setSyncMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [googleSyncMessage, setGoogleSyncMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showAddApiToken, setShowAddApiToken] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Detect ?google=connected query param to refresh profile data
   useEffect(() => {
@@ -202,6 +205,22 @@ export function SettingsForm() {
 
     // Clear message after 5 seconds
     setTimeout(() => setSyncMessage(null), 5000);
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch("/api/account/delete", { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to delete account");
+      }
+      window.location.href = "/login";
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Failed to delete account");
+      setIsDeleting(false);
+    }
   };
 
   const isCanvasConnected = profile?.canvas_token || profile?.canvas_calendar_url;
@@ -645,6 +664,67 @@ export function SettingsForm() {
                 </Button>
               </TabsContent>
             </Tabs>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-red-200">
+        <CardHeader>
+          <CardTitle className="text-red-600">Danger Zone</CardTitle>
+          <CardDescription>
+            Permanently delete your account and all associated data
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!showDeleteConfirm ? (
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Account
+            </Button>
+          ) : (
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                  <div className="text-sm text-red-800">
+                    <p className="font-medium">This action cannot be undone.</p>
+                    <p className="mt-1">
+                      This will permanently delete your account, profile, all calendar items,
+                      sync history, and categorization rules. Any connected integrations will
+                      be disconnected.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {deleteError && (
+                <div className="p-3 text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg">
+                  {deleteError}
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteAccount}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "Deleting..." : "Yes, delete my account"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeleteError(null);
+                  }}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
