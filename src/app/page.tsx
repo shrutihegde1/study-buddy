@@ -20,10 +20,10 @@ export default function Home() {
             Get Started
           </Link>
           <Link
-            href="/calendar"
+            href="/dashboard"
             className="px-8 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
           >
-            View Calendar
+            View Dashboard
           </Link>
         </div>
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">

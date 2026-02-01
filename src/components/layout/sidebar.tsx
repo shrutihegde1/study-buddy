@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Calendar, ListTodo, LayoutGrid, Settings, GraduationCap } from "lucide-react";
+import { Calendar, ListTodo, LayoutGrid, LayoutDashboard, Settings, GraduationCap } from "lucide-react";
 
 const navigation = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Due List", href: "/due-list", icon: ListTodo },
   { name: "Board", href: "/board", icon: LayoutGrid },
@@ -19,7 +20,7 @@ export function Sidebar() {
     <aside className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
       <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r bg-white px-6 pb-4">
         <div className="flex h-16 shrink-0 items-center">
-          <Link href="/calendar" className="flex items-center gap-2">
+          <Link href="/dashboard" className="flex items-center gap-2">
             <GraduationCap className="h-8 w-8 text-primary" />
             <span className="text-xl font-bold">Study Buddy</span>
           </Link>

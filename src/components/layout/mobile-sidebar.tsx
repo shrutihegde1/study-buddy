@@ -4,9 +4,10 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Calendar, ListTodo, LayoutGrid, Settings, GraduationCap, X } from "lucide-react";
+import { Calendar, ListTodo, LayoutGrid, LayoutDashboard, Settings, GraduationCap, X } from "lucide-react";
 
 const navigation = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Due List", href: "/due-list", icon: ListTodo },
   { name: "Board", href: "/board", icon: LayoutGrid },
@@ -44,7 +45,7 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
           <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
             <div className="flex h-16 shrink-0 items-center">
               <Link
-                href="/calendar"
+                href="/dashboard"
                 className="flex items-center gap-2"
                 onClick={onClose}
               >

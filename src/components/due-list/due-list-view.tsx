@@ -2,12 +2,19 @@
 
 import { useMemo } from "react";
 import { useCalendarItems } from "@/hooks/use-calendar-items";
+import { useHiddenSubjects } from "@/hooks/use-hidden-subjects";
 import { DueListSection } from "./due-list-section";
 import { isToday, isPast, isThisWeek, isFuture, parseISO, startOfDay } from "date-fns";
 import type { CalendarItem } from "@/types";
 
 export function DueListView() {
   const { items, isLoading, toggleComplete } = useCalendarItems();
+  const { isHidden } = useHiddenSubjects();
+
+  const filteredItems = useMemo(
+    () => items.filter((item) => !isHidden(item.course_name ?? "")),
+    [items, isHidden]
+  );
 
   const sections = useMemo(() => {
     const now = new Date();
@@ -19,7 +26,7 @@ export function DueListView() {
     const later: CalendarItem[] = [];
     const completed: CalendarItem[] = [];
 
-    items.forEach((item) => {
+    filteredItems.forEach((item) => {
       if (item.status === "completed") {
         completed.push(item);
         return;
@@ -60,7 +67,7 @@ export function DueListView() {
           new Date(a.completed_at || 0).getTime()
       ),
     };
-  }, [items]);
+  }, [filteredItems]);
 
   if (isLoading) {
     return (
