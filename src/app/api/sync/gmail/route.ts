@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { parseCanvasNotifications } from "@/lib/integrations/gmail-parser";
 import { applyRulesToInput } from "@/lib/categorization";
+import { getValidGoogleToken } from "@/lib/integrations/google-tokens";
 import type { CategorizationRule } from "@/types";
 
 export async function POST() {
@@ -15,19 +16,14 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the user's session to access the provider token
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const accessToken = await getValidGoogleToken(user.id);
 
-    if (!session?.provider_token) {
+    if (!accessToken) {
       return NextResponse.json(
-        { error: "Google access token not available. Please re-authenticate." },
+        { error: "Google not connected. Please connect Google in Settings." },
         { status: 401 }
       );
     }
-
-    const accessToken = session.provider_token;
 
     // Fetch user's categorization rules to apply during sync
     const { data: rules } = await supabase

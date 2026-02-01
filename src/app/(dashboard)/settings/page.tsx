@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { SettingsForm } from "@/components/settings/settings-form";
 
 export default function SettingsPage() {
@@ -12,7 +13,9 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <SettingsForm />
+      <Suspense>
+        <SettingsForm />
+      </Suspense>
     </div>
   );
 }

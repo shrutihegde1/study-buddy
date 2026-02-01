@@ -50,6 +50,8 @@ export interface Profile {
   canvas_base_url: string | null;
   canvas_calendar_url: string | null;
   google_refresh_token: string | null;
+  google_access_token: string | null;
+  google_token_expiry: string | null;
   onboarding_complete: boolean;
   created_at: string;
   updated_at: string;
