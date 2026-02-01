@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { startOfDay } from "date-fns";
 import {
   DndContext,
   DragOverlay,
@@ -154,9 +155,20 @@ export function BoardView({ viewMode = "by_course" }: BoardViewProps) {
       ? enrichedItems.filter((item) => !isHidden(item.course_name ?? ""))
       : enrichedItems;
 
+  // For "this_week": drop completed/cancelled items with past due dates
+  const thisWeekItems =
+    viewMode === "this_week"
+      ? visibleItems.filter((item) => {
+          if (!item.due_date) return true;
+          const isPast = new Date(item.due_date) < startOfDay(new Date());
+          const isDone = item.status === "completed" || item.status === "cancelled";
+          return !(isPast && isDone);
+        })
+      : visibleItems;
+
   const grouped =
     viewMode === "this_week"
-      ? groupByDueDate(visibleItems)
+      ? groupByDueDate(thisWeekItems, 10)
       : groupByCourse(visibleItems);
 
   return (

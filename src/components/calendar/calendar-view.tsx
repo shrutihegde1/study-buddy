@@ -6,6 +6,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { useCalendarItems } from "@/hooks/use-calendar-items";
+import { useHiddenSubjects } from "@/hooks/use-hidden-subjects";
 import { ITEM_TYPE_COLORS } from "@/lib/constants";
 import type { CalendarItem } from "@/types";
 
@@ -16,13 +17,16 @@ interface CalendarViewProps {
 
 export function CalendarView({ onDateSelect, onEventClick }: CalendarViewProps) {
   const { items, isLoading } = useCalendarItems();
+  const { isHidden } = useHiddenSubjects();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const events = items.map((item) => ({
+  const events = items
+    .filter((item) => !isHidden(item.course_name ?? ""))
+    .map((item) => ({
     id: item.id,
     title: item.title,
     start: item.due_date || item.start_time || undefined,
