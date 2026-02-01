@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { GripVertical, CalendarIcon, Check } from "lucide-react";
 import { isOverdue } from "@/lib/board-utils";
 import { ITEM_TYPE_LABELS, ITEM_TYPE_COLORS } from "@/lib/constants";
+import { extractTaskTheme, getThemeColor } from "@/lib/task-themes";
 import { EffortBadge } from "./effort-badge";
 import { StepsProgressBar } from "./steps-progress-bar";
 import { BoardCardActions } from "./board-card-actions";
@@ -45,6 +46,9 @@ export function BoardCard({
 
   const overdue = isOverdue(item);
   const showSuggested = isSuggested && item._suggested;
+  const theme = extractTaskTheme(item.title);
+  const badgeLabel = theme ?? ITEM_TYPE_LABELS[item.item_type];
+  const badgeColor = theme ? getThemeColor(theme) : ITEM_TYPE_COLORS[item.item_type];
 
   return (
     <div
@@ -113,9 +117,9 @@ export function BoardCard({
         )}
         <span
           className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium text-white"
-          style={{ backgroundColor: ITEM_TYPE_COLORS[item.item_type] }}
+          style={{ backgroundColor: badgeColor }}
         >
-          {ITEM_TYPE_LABELS[item.item_type]}
+          {badgeLabel}
         </span>
         {item.effort_estimate && (
           <EffortBadge effort={item.effort_estimate} />
