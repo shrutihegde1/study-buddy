@@ -87,6 +87,11 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Item ID required" }, { status: 400 });
     }
 
+    // Lock status so syncs don't overwrite user's manual changes
+    if ("status" in updates) {
+      updates.status_locked = true;
+    }
+
     const { data, error } = await supabase
       .from("calendar_items")
       .update(updates)

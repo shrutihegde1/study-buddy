@@ -72,9 +72,13 @@ export function useCalendarItems() {
     }: UpdateCalendarItemInput & { id: string }) => {
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
+
+      // Lock status so syncs don't overwrite user's manual changes
+      const updates = "status" in input ? { ...input, status_locked: true } : input;
+
       const { data, error } = await supabase
         .from("calendar_items")
-        .update(input)
+        .update(updates)
         .eq("id", id)
         .select()
         .single();

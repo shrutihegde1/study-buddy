@@ -39,7 +39,10 @@ export function DueListView() {
       }
 
       if (isPast(dueDate) && !isToday(dueDate)) {
-        overdue.push(item);
+        // Only assignments and user tasks are actionable when overdue
+        if (item.item_type === "assignment" || item.item_type === "task") {
+          overdue.push(item);
+        }
       } else if (isToday(dueDate)) {
         today.push(item);
       } else if (isThisWeek(dueDate, { weekStartsOn: 1 })) {

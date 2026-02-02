@@ -35,17 +35,21 @@ export async function POST() {
     }
 
     // Fetch all Canvas data
+    const baseUrl = profile.canvas_base_url.replace(/\/+$/, "");
     const { courses, assignments, calendarEvents, courseMap } = await fetchAllCanvasData(
-      profile.canvas_base_url,
+      baseUrl,
       profile.canvas_token
     );
+
+    const totalAssignments = assignments.reduce((sum, a) => sum + a.assignments.length, 0);
+    console.log(`[Canvas Sync] courses=${courses.length} assignments=${totalAssignments} calendarEvents=${calendarEvents.length}`);
 
     // Fetch submissions per course, build submissionMap: assignment_id → submission
     const submissionMap = new Map<number, CanvasSubmission>();
     for (const course of courses) {
       try {
         const submissions = await fetchCanvasSubmissions(
-          profile.canvas_base_url,
+          baseUrl,
           profile.canvas_token,
           course.id
         );
@@ -123,12 +127,15 @@ export async function POST() {
         );
 
         if (error) {
+          console.error(`[Canvas Sync] upsert error for "${assignment.name}":`, error.message);
           errors.push(`Failed to sync ${assignment.name}: ${error.message}`);
         } else {
           itemsSynced++;
         }
       }
     }
+
+    console.log(`[Canvas Sync] assignments synced: ${itemsSynced}, errors: ${errors.length}`);
 
     // Sync calendar events
     for (const event of calendarEvents) {

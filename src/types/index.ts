@@ -129,6 +129,31 @@ export interface CanvasCalendarEvent {
   all_day: boolean;
 }
 
+export interface CanvasPlannerItem {
+  context_type: string;
+  course_id: number;
+  plannable_id: number;
+  plannable_type: string;
+  plannable_date: string | null;
+  plannable: {
+    id: number;
+    title: string;
+    due_at: string | null;
+    description?: string;
+    points_possible?: number;
+    course_id: number;
+    html_url?: string;
+    submission_types?: string[];
+  };
+  html_url: string;
+  submissions?: {
+    submitted: boolean;
+    graded: boolean;
+    late: boolean;
+    missing: boolean;
+  };
+}
+
 export interface CanvasSubmission {
   id: number;
   assignment_id: number;

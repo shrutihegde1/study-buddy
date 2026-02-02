@@ -14,6 +14,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ArrowRight,
+  ExternalLink,
 } from "lucide-react";
 import {
   isToday,
@@ -43,10 +44,10 @@ export function DashboardView() {
     <div className="space-y-6">
       <StatsRow items={filteredItems} />
       <div className="grid lg:grid-cols-2 gap-6">
-        <UpcomingItemsList items={filteredItems} toggleComplete={toggleComplete} />
+        <NeedsAttention items={filteredItems} toggleComplete={toggleComplete} />
         <WeekStrip items={filteredItems} />
       </div>
-      <SubjectProgress items={filteredItems} />
+      <ThisWeek items={filteredItems} />
     </div>
   );
 }
@@ -69,7 +70,9 @@ function StatsRow({ items }: { items: CalendarItem[] }) {
       if (!dueDate) return;
 
       if (isPast(dueDate) && !isToday(dueDate)) {
-        overdue++;
+        if (item.item_type === "assignment" || item.item_type === "task") {
+          overdue++;
+        }
       }
       if (isToday(dueDate)) {
         dueToday++;
@@ -134,32 +137,54 @@ function StatsRow({ items }: { items: CalendarItem[] }) {
   );
 }
 
-function UpcomingItemsList({
+function NeedsAttention({
   items,
   toggleComplete,
 }: {
   items: CalendarItem[];
   toggleComplete: (id: string, completed: boolean) => Promise<void>;
 }) {
-  const upcoming = useMemo(() => {
-    return items
-      .filter(
-        (item) =>
-          (item.status === "pending" || item.status === "in_progress") &&
-          item.due_date
-      )
-      .sort(
-        (a, b) =>
-          new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime()
-      )
-      .slice(0, 5);
+  const { overdueItems, todayItems } = useMemo(() => {
+    const overdue: CalendarItem[] = [];
+    const today: CalendarItem[] = [];
+
+    items.forEach((item) => {
+      if (item.status === "completed" || item.status === "cancelled") return;
+      if (!item.due_date) return;
+
+      const dueDate = parseISO(item.due_date);
+
+      if (isToday(dueDate)) {
+        today.push(item);
+      } else if (
+        isPast(dueDate) &&
+        (item.item_type === "assignment" || item.item_type === "task")
+      ) {
+        overdue.push(item);
+      }
+    });
+
+    overdue.sort(
+      (a, b) =>
+        new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime()
+    );
+    today.sort(
+      (a, b) =>
+        new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime()
+    );
+
+    return { overdueItems: overdue, todayItems: today };
   }, [items]);
+
+  const isEmpty = overdueItems.length === 0 && todayItems.length === 0;
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold">Upcoming</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            Needs Attention
+          </CardTitle>
           <Link
             href="/due-list"
             className="text-sm text-primary hover:underline inline-flex items-center gap-1"
@@ -169,55 +194,111 @@ function UpcomingItemsList({
         </div>
       </CardHeader>
       <CardContent>
-        {upcoming.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            No upcoming items
-          </p>
+        {isEmpty ? (
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <CheckCircle2 className="h-8 w-8 text-green-500 mb-2" />
+            <p className="text-sm font-medium text-green-700">
+              You&apos;re all caught up!
+            </p>
+          </div>
         ) : (
-          <div className="space-y-3">
-            {upcoming.map((item) => (
-              <div key={item.id} className="flex items-start gap-3">
-                <Checkbox
-                  checked={false}
-                  onCheckedChange={(checked) =>
-                    toggleComplete(item.id, checked as boolean)
-                  }
-                  className="mt-0.5"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium truncate">
-                      {item.title}
-                    </span>
-                    <Badge
-                      variant={
-                        item.item_type as
-                          | "assignment"
-                          | "test"
-                          | "quiz"
-                          | "activity"
-                          | "task"
-                      }
-                      className="shrink-0"
+          <div className="space-y-4">
+            {overdueItems.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-red-600 mb-2">
+                  Overdue
+                </h4>
+                <div className="space-y-1">
+                  {overdueItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 rounded-md bg-red-50 px-3 py-2"
                     >
-                      {ITEM_TYPE_LABELS[item.item_type]}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {item.course_name && (
-                      <span className="text-xs text-muted-foreground">
-                        {item.course_name}
-                      </span>
-                    )}
-                    {item.due_date && (
-                      <span className="text-xs text-muted-foreground">
-                        {format(parseISO(item.due_date), "MMM d")}
-                      </span>
-                    )}
-                  </div>
+                      <Checkbox
+                        checked={false}
+                        onCheckedChange={(checked) =>
+                          toggleComplete(item.id, checked as boolean)
+                        }
+                        className="shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium truncate block">
+                          {item.title}
+                        </span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {item.course_name && (
+                            <span className="text-xs text-muted-foreground">
+                              {item.course_name}
+                            </span>
+                          )}
+                          <span className="text-xs text-red-600 font-medium">
+                            {format(parseISO(item.due_date!), "MMM d")}
+                          </span>
+                        </div>
+                      </div>
+                      {item.source_url && (
+                        <a
+                          href={item.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 text-muted-foreground hover:text-primary"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            )}
+            {todayItems.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-blue-600 mb-2">
+                  Today
+                </h4>
+                <div className="space-y-1">
+                  {todayItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 rounded-md bg-blue-50 px-3 py-2"
+                    >
+                      <Checkbox
+                        checked={false}
+                        onCheckedChange={(checked) =>
+                          toggleComplete(item.id, checked as boolean)
+                        }
+                        className="shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium truncate">
+                            {item.title}
+                          </span>
+                          <Badge
+                            variant={
+                              item.item_type as
+                                | "assignment"
+                                | "test"
+                                | "quiz"
+                                | "activity"
+                                | "task"
+                            }
+                            className="shrink-0"
+                          >
+                            {ITEM_TYPE_LABELS[item.item_type]}
+                          </Badge>
+                        </div>
+                        {item.course_name && (
+                          <span className="text-xs text-muted-foreground mt-0.5 block">
+                            {item.course_name}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
@@ -286,56 +367,100 @@ function WeekStrip({ items }: { items: CalendarItem[] }) {
   );
 }
 
-function SubjectProgress({ items }: { items: CalendarItem[] }) {
-  const subjects = useMemo(() => {
-    const map = new Map<string, { total: number; completed: number }>();
+function ThisWeek({ items }: { items: CalendarItem[] }) {
+  const dayGroups = useMemo(() => {
+    const today = new Date();
+    const groups: { date: Date; label: string; items: CalendarItem[] }[] = [];
 
-    items.forEach((item) => {
-      const course = item.course_name || "Uncategorized";
-      const entry = map.get(course) || { total: 0, completed: 0 };
-      entry.total++;
-      if (item.status === "completed") entry.completed++;
-      map.set(course, entry);
-    });
+    for (let i = 1; i <= 6; i++) {
+      const date = addDays(today, i);
+      const label =
+        i === 1 ? "Tomorrow" : format(date, "EEE, MMM d");
 
-    return Array.from(map.entries())
-      .map(([name, { total, completed }]) => ({
-        name,
-        total,
-        completed,
-        percent: Math.round((completed / total) * 100),
-      }))
-      .sort((a, b) => a.percent - b.percent);
+      const dayItems = items
+        .filter((item) => {
+          if (item.status === "completed" || item.status === "cancelled")
+            return false;
+          if (!item.due_date) return false;
+          return isSameDay(parseISO(item.due_date), date);
+        })
+        .sort(
+          (a, b) =>
+            new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime()
+        );
+
+      if (dayItems.length > 0) {
+        groups.push({ date, label, items: dayItems });
+      }
+    }
+
+    return groups;
   }, [items]);
-
-  if (subjects.length === 0) return null;
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold">
-          Progress by Subject
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-semibold">This Week</CardTitle>
+          <Link
+            href="/due-list"
+            className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+          >
+            View all <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {subjects.map((subject) => (
-            <div key={subject.name}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium">{subject.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {subject.completed}/{subject.total} ({subject.percent}%)
-                </span>
+        {dayGroups.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">
+            No upcoming items this week
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {dayGroups.map((group) => (
+              <div key={group.label}>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                  {group.label}
+                </h4>
+                <div className="space-y-1">
+                  {group.items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-gray-50"
+                    >
+                      <Badge
+                        variant={
+                          item.item_type as
+                            | "assignment"
+                            | "test"
+                            | "quiz"
+                            | "activity"
+                            | "task"
+                        }
+                        className="shrink-0"
+                      >
+                        {ITEM_TYPE_LABELS[item.item_type]}
+                      </Badge>
+                      <span className="text-sm font-medium truncate flex-1">
+                        {item.title}
+                      </span>
+                      {item.course_name && (
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {item.course_name}
+                        </span>
+                      )}
+                      {!item.all_day && item.due_date && (
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {format(parseISO(item.due_date), "h:mm a")}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="h-2 rounded-full bg-gray-100">
-                <div
-                  className="h-2 rounded-full bg-primary transition-all"
-                  style={{ width: `${subject.percent}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -372,9 +497,15 @@ function DashboardSkeleton() {
       <div className="bg-white rounded-lg shadow-sm border p-6 animate-pulse">
         <div className="h-5 w-32 bg-gray-200 rounded mb-4" />
         <div className="space-y-4">
-          <div className="h-6 bg-gray-100 rounded" />
-          <div className="h-6 bg-gray-100 rounded" />
-          <div className="h-6 bg-gray-100 rounded" />
+          {[1, 2, 3].map((g) => (
+            <div key={g}>
+              <div className="h-3 w-20 bg-gray-200 rounded mb-2" />
+              <div className="space-y-1">
+                <div className="h-9 bg-gray-100 rounded" />
+                <div className="h-9 bg-gray-100 rounded" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

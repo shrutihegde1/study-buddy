@@ -89,7 +89,10 @@ export function groupByDueDate(
       item.status !== "completed" &&
       item.status !== "cancelled"
     ) {
-      addToGroup("Overdue", item);
+      // Only assignments and user tasks are actionable when overdue
+      if (item.item_type === "assignment" || item.item_type === "task") {
+        addToGroup("Overdue", item);
+      }
     } else if (isToday(due)) {
       addToGroup("Today", item);
     } else if (isTomorrow(due)) {
