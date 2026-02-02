@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import { useProfile } from "@/hooks/use-profile";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -15,60 +14,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TIMEZONES } from "@/lib/constants";
 import { Check, AlertCircle, ChevronDown, ChevronUp, LogOut, Link, Key, RefreshCw, Trash2 } from "lucide-react";
 import { useSync } from "@/hooks/use-sync";
-import { useQueryClient } from "@tanstack/react-query";
-
-const GOOGLE_SCOPES = [
-  {
-    scope: "classroom.courses.readonly",
-    label: "Google Classroom Courses",
-    description: "View your Google Classroom courses",
-  },
-  {
-    scope: "classroom.coursework.me.readonly",
-    label: "Google Classroom Assignments",
-    description: "View your assignments and coursework",
-  },
-  {
-    scope: "gmail.readonly",
-    label: "Gmail (Read Only)",
-    description: "Read emails to parse Canvas notifications",
-  },
-];
 
 export function SettingsForm() {
   const { profile, isLoading, updateProfile, isUpdating } = useProfile();
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuth();
   const { sync, isSyncing } = useSync();
-  const queryClient = useQueryClient();
-  const searchParams = useSearchParams();
   const [displayName, setDisplayName] = useState("");
   const [timezone, setTimezone] = useState("America/Los_Angeles");
   const [canvasToken, setCanvasToken] = useState("");
   const [canvasBaseUrl, setCanvasBaseUrl] = useState("");
   const [canvasCalendarUrl, setCanvasCalendarUrl] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
-  const [showScopes, setShowScopes] = useState(false);
-  const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [canvasMethod, setCanvasMethod] = useState<"calendar" | "api">("calendar");
   const [syncMessage, setSyncMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [googleSyncMessage, setGoogleSyncMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showAddApiToken, setShowAddApiToken] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  // Detect ?google=connected query param to refresh profile data
-  useEffect(() => {
-    const googleParam = searchParams.get("google");
-    if (googleParam === "connected") {
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-    }
-  }, [searchParams, queryClient]);
 
   // Update form values when profile loads
   useEffect(() => {
@@ -142,50 +108,6 @@ export function SettingsForm() {
     }
   };
 
-  const handleDisconnectGoogle = async () => {
-    setIsDisconnecting(true);
-    try {
-      const res = await fetch("/api/integrations/google/disconnect", {
-        method: "POST",
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to disconnect");
-      }
-
-      // Refresh profile to reflect disconnected state
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-    } catch (error) {
-      console.error("Error disconnecting Google:", error);
-    } finally {
-      setIsDisconnecting(false);
-    }
-  };
-
-  const handleSyncGoogle = async () => {
-    setGoogleSyncMessage(null);
-    const results = await sync("all");
-
-    const classroomResult = results.classroom;
-    const gmailResult = results.gmail;
-    const totalSynced = (classroomResult?.itemsSynced || 0) + (gmailResult?.itemsSynced || 0);
-    const hasError = classroomResult?.error || gmailResult?.error;
-
-    if (hasError) {
-      setGoogleSyncMessage({
-        type: "error",
-        text: classroomResult?.error || gmailResult?.error || "Failed to sync Google data",
-      });
-    } else {
-      setGoogleSyncMessage({
-        type: "success",
-        text: `Synced ${totalSynced} items from Google!`,
-      });
-    }
-
-    setTimeout(() => setGoogleSyncMessage(null), 5000);
-  };
-
   const handleSyncCanvas = async () => {
     setSyncMessage(null);
     const results = await sync("canvas");
@@ -224,7 +146,6 @@ export function SettingsForm() {
   };
 
   const isCanvasConnected = profile?.canvas_token || profile?.canvas_calendar_url;
-  const isGoogleConnected = !!profile?.google_refresh_token;
 
   if (isLoading) {
     return (
@@ -306,124 +227,6 @@ export function SettingsForm() {
               Sign Out
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Google Integration</CardTitle>
-          <CardDescription>
-            Sync with Google Classroom and Gmail
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {isGoogleConnected ? (
-            <>
-              <div className="p-4 bg-green-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600" />
-                    <div>
-                      <p className="font-medium text-green-900">Connected</p>
-                      <p className="text-sm text-green-700">
-                        {user?.email}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSyncGoogle}
-                      disabled={isSyncing}
-                    >
-                      <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
-                      {isSyncing ? "Syncing..." : "Sync Now"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDisconnectGoogle}
-                      disabled={isDisconnecting}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      {isDisconnecting ? "Disconnecting..." : "Disconnect"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              {googleSyncMessage && (
-                <div className={`p-3 rounded-lg text-sm ${
-                  googleSyncMessage.type === "success"
-                    ? "bg-green-50 text-green-800 border border-green-200"
-                    : "bg-red-50 text-red-800 border border-red-200"
-                }`}>
-                  {googleSyncMessage.text}
-                </div>
-              )}
-
-              <div className="border rounded-lg">
-                <button
-                  onClick={() => setShowScopes(!showScopes)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">Permissions Granted</span>
-                    <Badge variant="secondary">{GOOGLE_SCOPES.length} scopes</Badge>
-                  </div>
-                  {showScopes ? (
-                    <ChevronUp className="h-4 w-4 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-gray-500" />
-                  )}
-                </button>
-
-                {showScopes && (
-                  <div className="border-t px-4 py-3 space-y-3">
-                    {GOOGLE_SCOPES.map((scope) => (
-                      <div key={scope.scope} className="flex items-start gap-3">
-                        <Check className="h-4 w-4 text-green-500 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">{scope.label}</p>
-                          <p className="text-xs text-gray-500">{scope.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                    <div className="pt-2 border-t">
-                      <p className="text-xs text-gray-500">
-                        To modify permissions, disconnect and reconnect your Google account.
-                        You can also manage app access in your{" "}
-                        <a
-                          href="https://myaccount.google.com/permissions"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          Google Account settings
-                        </a>
-                        .
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="space-y-4">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
-                  <p className="text-sm text-blue-800">
-                    Connect your Google account to sync Classroom assignments and Gmail notifications.
-                  </p>
-                </div>
-              </div>
-              <Button asChild>
-                <a href="/api/integrations/google">Connect Google</a>
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
 

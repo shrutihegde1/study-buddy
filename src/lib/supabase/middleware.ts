@@ -42,8 +42,7 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute = publicRoutes.some(
     (route) =>
       request.nextUrl.pathname === route ||
-      request.nextUrl.pathname.startsWith("/api/webhooks") ||
-      request.nextUrl.pathname.startsWith("/api/integrations/google/callback")
+      request.nextUrl.pathname.startsWith("/api/webhooks")
   );
 
   if (!user && !isPublicRoute) {

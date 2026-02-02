@@ -50,8 +50,6 @@ export interface Profile {
   canvas_base_url: string | null;
   canvas_calendar_url: string | null;
   google_refresh_token: string | null;
-  google_access_token: string | null;
-  google_token_expiry: string | null;
   onboarding_complete: boolean;
   created_at: string;
   updated_at: string;
@@ -95,43 +93,6 @@ export interface UpdateCalendarItemInput extends Partial<CreateCalendarItemInput
 export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
-}
-
-// Google Classroom types
-export interface GoogleClassroomCourse {
-  id: string;
-  name: string;
-  section?: string;
-  descriptionHeading?: string;
-  room?: string;
-  ownerId: string;
-  creationTime: string;
-  updateTime: string;
-  enrollmentCode?: string;
-  courseState: 'ACTIVE' | 'ARCHIVED' | 'PROVISIONED' | 'DECLINED' | 'SUSPENDED';
-  alternateLink: string;
-}
-
-export interface GoogleClassroomCourseWork {
-  courseId: string;
-  id: string;
-  title: string;
-  description?: string;
-  state: 'PUBLISHED' | 'DRAFT' | 'DELETED';
-  alternateLink: string;
-  creationTime: string;
-  updateTime: string;
-  dueDate?: {
-    year: number;
-    month: number;
-    day: number;
-  };
-  dueTime?: {
-    hours: number;
-    minutes?: number;
-  };
-  maxPoints?: number;
-  workType: 'ASSIGNMENT' | 'SHORT_ANSWER_QUESTION' | 'MULTIPLE_CHOICE_QUESTION';
 }
 
 // Canvas API types

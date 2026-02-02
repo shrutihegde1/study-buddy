@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-type SyncSource = "classroom" | "canvas" | "canvas-calendar" | "gmail" | "all";
+type SyncSource = "canvas" | "canvas-calendar" | "all";
 
 interface SyncResult {
   success: boolean;
@@ -64,19 +64,8 @@ export function useSync() {
       const results: Record<string, SyncResult> = {};
 
       try {
-        if (source === "all") {
-          // Sync all sources in parallel
-          const [classroomResult, canvasResult, gmailResult] = await Promise.all([
-            syncSource("classroom"),
-            syncCanvas(),
-            syncSource("gmail"),
-          ]);
-
-          results.classroom = classroomResult;
-          results.canvas = canvasResult;
-          results.gmail = gmailResult;
-        } else if (source === "canvas") {
-          results[source] = await syncCanvas();
+        if (source === "all" || source === "canvas") {
+          results.canvas = await syncCanvas();
         } else {
           results[source] = await syncSource(source);
         }
