@@ -1,19 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { CalendarItem, CreateCalendarItemInput, UpdateCalendarItemInput } from "@/types";
+import { useItemCutoffDate } from "@/hooks/use-item-cutoff-date";
+import { parseDueDate } from "@/lib/board-utils";
 
 export function useCalendarItems() {
   const queryClient = useQueryClient();
   const [mounted, setMounted] = useState(false);
+  const { cutoffDate } = useItemCutoffDate();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const {
-    data: items = [],
+    data: rawItems = [],
     isLoading,
     error,
   } = useQuery({
@@ -37,6 +40,15 @@ export function useCalendarItems() {
     },
     enabled: mounted,
   });
+
+  const items = useMemo(() => {
+    if (!cutoffDate) return rawItems;
+    const cutoff = new Date(cutoffDate);
+    return rawItems.filter((item) => {
+      if (!item.due_date) return true;
+      return parseDueDate(item.due_date) >= cutoff;
+    });
+  }, [rawItems, cutoffDate]);
 
   const createItemMutation = useMutation({
     mutationFn: async (input: CreateCalendarItemInput) => {

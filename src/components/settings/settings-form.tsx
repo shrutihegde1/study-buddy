@@ -18,11 +18,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TIMEZONES } from "@/lib/constants";
 import { Check, AlertCircle, ChevronDown, ChevronUp, LogOut, Link, Key, RefreshCw, Trash2 } from "lucide-react";
 import { useSync } from "@/hooks/use-sync";
+import { useItemCutoffDate } from "@/hooks/use-item-cutoff-date";
 
 export function SettingsForm() {
   const { profile, isLoading, updateProfile, isUpdating } = useProfile();
   const { signOut } = useAuth();
   const { sync, isSyncing } = useSync();
+  const { cutoffDate, setCutoffDate, clearCutoff } = useItemCutoffDate();
   const [displayName, setDisplayName] = useState("");
   const [timezone, setTimezone] = useState("America/Los_Angeles");
   const [canvasToken, setCanvasToken] = useState("");
@@ -226,6 +228,40 @@ export function SettingsForm() {
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Preferences</CardTitle>
+          <CardDescription>
+            Customize how items are displayed across all views
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="cutoffDate">Hide items due before</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="cutoffDate"
+                type="date"
+                value={cutoffDate || ""}
+                onChange={(e) => setCutoffDate(e.target.value || null)}
+                className="w-auto"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearCutoff}
+                disabled={!cutoffDate}
+              >
+                Clear
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500">
+              Items with due dates before this date will be hidden from all views. Useful for ignoring previous semester assignments.
+            </p>
           </div>
         </CardContent>
       </Card>
