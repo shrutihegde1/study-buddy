@@ -1,4 +1,5 @@
-import type { CalendarItem, Step } from "@/types";
+import type { CalendarItem, Step, ItemType } from "@/types";
+import { ITEM_TYPE_LABELS } from "@/lib/constants";
 import {
   isToday,
   isTomorrow,
@@ -6,12 +7,24 @@ import {
   startOfDay,
   addDays,
   format,
+  parseISO,
 } from "date-fns";
+
+/**
+ * Parse a due_date TIMESTAMPTZ string into a local-midnight Date for the
+ * intended calendar date.  We extract the UTC year/month/day so that a
+ * value like "2026-02-03T00:00:00Z" always maps to Feb 3 in every timezone
+ * rather than shifting to Feb 2 for users west of UTC.
+ */
+export function parseDueDate(dateStr: string): Date {
+  const d = parseISO(dateStr);
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
 
 export function isOverdue(item: CalendarItem): boolean {
   if (!item.due_date) return false;
   if (item.status === "completed" || item.status === "cancelled") return false;
-  return new Date(item.due_date) < new Date();
+  return isBefore(parseDueDate(item.due_date), startOfDay(new Date()));
 }
 
 export function groupByCourse(
@@ -81,8 +94,8 @@ export function groupByDueDate(
       continue;
     }
 
-    const due = new Date(item.due_date);
-    const dueDay = startOfDay(due);
+    const due = parseDueDate(item.due_date);
+    const dueDay = due; // already at local midnight via parseDueDate
 
     if (
       isBefore(dueDay, todayStart) &&
@@ -131,5 +144,34 @@ export function groupByDueDate(
   for (const key of orderedKeys) {
     sorted[key] = groups[key];
   }
+  return sorted;
+}
+
+/**
+ * Group items by item_type (Assignment, Task, Quiz, Test, Activity)
+ */
+export function groupByType(
+  items: CalendarItem[]
+): Record<string, CalendarItem[]> {
+  const groups: Record<string, CalendarItem[]> = {};
+
+  // Define the order of types
+  const typeOrder: ItemType[] = ["assignment", "task", "quiz", "test", "activity"];
+
+  for (const item of items) {
+    const label = ITEM_TYPE_LABELS[item.item_type] || item.item_type;
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(item);
+  }
+
+  // Sort by the defined order
+  const sorted: Record<string, CalendarItem[]> = {};
+  for (const type of typeOrder) {
+    const label = ITEM_TYPE_LABELS[type];
+    if (groups[label]) {
+      sorted[label] = groups[label];
+    }
+  }
+
   return sorted;
 }

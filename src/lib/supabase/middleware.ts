@@ -52,8 +52,8 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && request.nextUrl.pathname === "/login") {
-    // User is logged in and trying to access login page, redirect to calendar
+  if (user && (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/")) {
+    // User is logged in and trying to access login or landing page, redirect to dashboard
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

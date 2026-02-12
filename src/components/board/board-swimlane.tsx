@@ -17,6 +17,7 @@ interface BoardSwimlaneProps {
   suggestions?: Map<string, string>;
   isHidden?: boolean;
   onToggleVisibility?: (courseName: string) => void;
+  onStartFocus?: (id: string, title: string) => void;
 }
 
 export function BoardSwimlane({
@@ -29,6 +30,7 @@ export function BoardSwimlane({
   suggestions,
   isHidden,
   onToggleVisibility,
+  onStartFocus,
 }: BoardSwimlaneProps) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -91,6 +93,7 @@ export function BoardSwimlane({
               onEdit={onEdit}
               onConfirmSuggestion={onConfirmSuggestion}
               suggestions={suggestions}
+              onStartFocus={onStartFocus}
             />
           ))}
         </div>

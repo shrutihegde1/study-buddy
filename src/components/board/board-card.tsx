@@ -20,6 +20,7 @@ interface BoardCardProps {
   onDelete: (id: string) => void;
   onEdit: (item: CalendarItem) => void;
   onConfirmSuggestion?: (item: CalendarItem & { _suggested?: boolean }) => void;
+  onStartFocus?: (id: string, title: string) => void;
 }
 
 export function BoardCard({
@@ -29,6 +30,7 @@ export function BoardCard({
   onDelete,
   onEdit,
   onConfirmSuggestion,
+  onStartFocus,
 }: BoardCardProps) {
   const {
     attributes,
@@ -82,6 +84,7 @@ export function BoardCard({
           item={item}
           onStatusChange={onStatusChange}
           onDelete={onDelete}
+          onStartFocus={onStartFocus}
         />
       </div>
 

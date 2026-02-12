@@ -18,6 +18,7 @@ interface BoardColumnProps {
   onEdit: (item: CalendarItem) => void;
   onConfirmSuggestion?: (item: CalendarItem & { _suggested?: boolean }) => void;
   suggestions?: Map<string, string>;
+  onStartFocus?: (id: string, title: string) => void;
 }
 
 const COLUMN_HEADER_COLORS: Record<string, string> = {
@@ -36,6 +37,7 @@ export function BoardColumn({
   onEdit,
   onConfirmSuggestion,
   suggestions,
+  onStartFocus,
 }: BoardColumnProps) {
   const droppableId = `${courseKey}::${column.id}`;
   const { setNodeRef, isOver } = useDroppable({ id: droppableId });
@@ -71,6 +73,7 @@ export function BoardColumn({
               onDelete={onDelete}
               onEdit={onEdit}
               onConfirmSuggestion={onConfirmSuggestion}
+              onStartFocus={onStartFocus}
             />
           ))}
         </div>

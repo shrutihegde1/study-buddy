@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { startOfDay } from "date-fns";
+import { isBefore, startOfDay } from "date-fns";
 import {
   DndContext,
   DragOverlay,
@@ -15,12 +15,13 @@ import {
 import { useCalendarItems } from "@/hooks/use-calendar-items";
 import { useCategorizationRules } from "@/hooks/use-categorization-rules";
 import { useHiddenSubjects } from "@/hooks/use-hidden-subjects";
-import { groupByCourse, groupByDueDate } from "@/lib/board-utils";
+import { groupByCourse, groupByDueDate, groupByType, parseDueDate } from "@/lib/board-utils";
 import { categorizeItems } from "@/lib/categorization";
 import { BoardSwimlane } from "./board-swimlane";
 import { BoardEmptyState } from "./board-empty-state";
 import { BoardCard } from "./board-card";
 import { ItemModal } from "@/components/items/item-modal";
+import { useFocusTimer } from "@/components/focus-timer/focus-timer-context";
 import type { CalendarItem, ItemStatus, BoardViewMode } from "@/types";
 
 interface BoardViewProps {
@@ -29,6 +30,7 @@ interface BoardViewProps {
 
 export function BoardView({ viewMode = "by_course" }: BoardViewProps) {
   const { items, isLoading, updateItem, deleteItem } = useCalendarItems();
+  const { startFocusTimer } = useFocusTimer();
   const { rules, createRule } = useCategorizationRules();
   const { isHidden, toggleSubject } = useHiddenSubjects();
   const [activeItem, setActiveItem] = useState<CalendarItem | null>(null);
@@ -82,6 +84,14 @@ export function BoardView({ viewMode = "by_course" }: BoardViewProps) {
     setEditItem(item);
     setModalOpen(true);
   }, []);
+
+  const handleStartFocus = useCallback(
+    (id: string, title: string) => {
+      handleStatusChange(id, "in_progress");
+      startFocusTimer(id, title);
+    },
+    [handleStatusChange, startFocusTimer]
+  );
 
   const handleConfirmSuggestion = useCallback(
     async (item: CalendarItem & { _suggested?: boolean }) => {
@@ -160,7 +170,7 @@ export function BoardView({ viewMode = "by_course" }: BoardViewProps) {
     viewMode === "this_week"
       ? visibleItems.filter((item) => {
           if (!item.due_date) return true;
-          const isPast = new Date(item.due_date) < startOfDay(new Date());
+          const isPast = isBefore(parseDueDate(item.due_date), startOfDay(new Date()));
           const isDone = item.status === "completed" || item.status === "cancelled";
           return !(isPast && isDone);
         })
@@ -169,6 +179,8 @@ export function BoardView({ viewMode = "by_course" }: BoardViewProps) {
   const grouped =
     viewMode === "this_week"
       ? groupByDueDate(thisWeekItems, 10)
+      : viewMode === "by_type"
+      ? groupByType(visibleItems)
       : groupByCourse(visibleItems);
 
   return (
@@ -190,6 +202,7 @@ export function BoardView({ viewMode = "by_course" }: BoardViewProps) {
               onEdit={handleEdit}
               onConfirmSuggestion={handleConfirmSuggestion}
               suggestions={suggestions}
+              onStartFocus={handleStartFocus}
               {...(viewMode === "by_course" && {
                 isHidden: isHidden(groupName),
                 onToggleVisibility: toggleSubject,

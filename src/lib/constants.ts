@@ -96,5 +96,7 @@ export const CANVAS_API_ENDPOINTS = {
 
 export const BOARD_VIEW_MODES: { value: BoardViewMode; label: string }[] = [
   { value: "by_course", label: "By Subject" },
+  { value: "by_type", label: "By Type" },
   { value: "this_week", label: "This Week" },
+  { value: "due_list", label: "Due List" },
 ];

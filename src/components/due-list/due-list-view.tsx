@@ -3,13 +3,40 @@
 import { useMemo } from "react";
 import { useCalendarItems } from "@/hooks/use-calendar-items";
 import { useHiddenSubjects } from "@/hooks/use-hidden-subjects";
+import { useFocusTimer } from "@/components/focus-timer/focus-timer-context";
 import { DueListSection } from "./due-list-section";
-import { isToday, isPast, isThisWeek, isFuture, parseISO, startOfDay } from "date-fns";
+import { isToday, isThisWeek, isBefore, startOfDay, addDays } from "date-fns";
+import { parseDueDate } from "@/lib/board-utils";
 import type { CalendarItem } from "@/types";
 
 export function DueListView() {
-  const { items, isLoading, toggleComplete } = useCalendarItems();
+  const { items, isLoading, toggleComplete, updateItem } = useCalendarItems();
   const { isHidden } = useHiddenSubjects();
+  const { startFocusTimer } = useFocusTimer();
+
+  const handleStart = async (item: CalendarItem) => {
+    await updateItem({ id: item.id, status: "in_progress" });
+  };
+
+  const handleStartWithFocus = async (item: CalendarItem) => {
+    await updateItem({ id: item.id, status: "in_progress" });
+    startFocusTimer(item.id, item.title);
+  };
+
+  const handleSnooze = async (item: CalendarItem) => {
+    const nextWeek = addDays(startOfDay(new Date()), 7);
+    await updateItem({ id: item.id, due_date: nextWeek.toISOString() });
+  };
+
+  const handleDismiss = async (item: CalendarItem) => {
+    await updateItem({ id: item.id, status: "cancelled" });
+  };
+
+  const handleCloseOldItems = async (items: CalendarItem[]) => {
+    for (const item of items) {
+      await updateItem({ id: item.id, status: "cancelled" });
+    }
+  };
 
   const filteredItems = useMemo(
     () => items.filter((item) => !isHidden(item.course_name ?? "")),
@@ -27,18 +54,24 @@ export function DueListView() {
     const completed: CalendarItem[] = [];
 
     filteredItems.forEach((item) => {
+      // Skip cancelled items entirely
+      if (item.status === "cancelled") {
+        return;
+      }
+
       if (item.status === "completed") {
         completed.push(item);
         return;
       }
 
-      const dueDate = item.due_date ? parseISO(item.due_date) : null;
+      const dueDate = item.due_date ? parseDueDate(item.due_date) : null;
       if (!dueDate) {
         later.push(item);
         return;
       }
 
-      if (isPast(dueDate) && !isToday(dueDate)) {
+      const todayMidnight = startOfDay(new Date());
+      if (isBefore(dueDate, todayMidnight)) {
         // Only assignments and user tasks are actionable when overdue
         if (item.item_type === "assignment" || item.item_type === "task") {
           overdue.push(item);
@@ -127,6 +160,11 @@ export function DueListView() {
           items={sections.overdue}
           variant="overdue"
           onToggleComplete={toggleComplete}
+          onStart={handleStart}
+          onStartWithFocus={handleStartWithFocus}
+          onSnooze={handleSnooze}
+          onDismiss={handleDismiss}
+          onCloseOldItems={handleCloseOldItems}
         />
       )}
 
@@ -136,6 +174,10 @@ export function DueListView() {
           items={sections.today}
           variant="today"
           onToggleComplete={toggleComplete}
+          onStart={handleStart}
+          onStartWithFocus={handleStartWithFocus}
+          onSnooze={handleSnooze}
+          onDismiss={handleDismiss}
         />
       )}
 
@@ -144,6 +186,10 @@ export function DueListView() {
           title="This Week"
           items={sections.thisWeek}
           onToggleComplete={toggleComplete}
+          onStart={handleStart}
+          onStartWithFocus={handleStartWithFocus}
+          onSnooze={handleSnooze}
+          onDismiss={handleDismiss}
         />
       )}
 
@@ -152,6 +198,10 @@ export function DueListView() {
           title="Later"
           items={sections.later}
           onToggleComplete={toggleComplete}
+          onStart={handleStart}
+          onStartWithFocus={handleStartWithFocus}
+          onSnooze={handleSnooze}
+          onDismiss={handleDismiss}
         />
       )}
 

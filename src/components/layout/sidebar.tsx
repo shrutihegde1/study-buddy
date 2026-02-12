@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Calendar, ListTodo, LayoutGrid, LayoutDashboard, Settings, GraduationCap } from "lucide-react";
+import { Calendar, LayoutGrid, LayoutDashboard, Settings, GraduationCap } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Get it done", href: "/board", icon: LayoutGrid },
   { name: "Calendar", href: "/calendar", icon: Calendar },
-  { name: "Due List", href: "/due-list", icon: ListTodo },
-  { name: "Board", href: "/board", icon: LayoutGrid },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

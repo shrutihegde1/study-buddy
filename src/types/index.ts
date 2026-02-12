@@ -175,4 +175,4 @@ export interface CategorizationRule {
   updated_at: string;
 }
 
-export type BoardViewMode = 'by_course' | 'this_week';
+export type BoardViewMode = 'by_course' | 'by_type' | 'this_week' | 'due_list';

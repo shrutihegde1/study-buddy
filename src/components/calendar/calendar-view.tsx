@@ -39,21 +39,21 @@ export function CalendarView({ onDateSelect, onEventClick }: CalendarViewProps) 
 
   if (!mounted) {
     return (
-      <div className="bg-white rounded-lg shadow p-6 min-h-[600px] flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow p-3 h-[380px] flex items-center justify-center">
         <div className="animate-pulse text-gray-400">Loading calendar...</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
+    <div className="bg-white rounded-lg shadow p-3">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
         headerToolbar={{
           left: "prev,next today",
           center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay",
+          right: "dayGridMonth,timeGridWeek",
         }}
         events={events}
         dateClick={(info) => onDateSelect?.(info.date)}
@@ -61,12 +61,11 @@ export function CalendarView({ onDateSelect, onEventClick }: CalendarViewProps) 
           const item = info.event.extendedProps.item as CalendarItem;
           onEventClick?.(item);
         }}
-        height="auto"
-        aspectRatio={1.8}
+        height={380}
         editable={false}
         selectable={true}
         selectMirror={true}
-        dayMaxEvents={3}
+        dayMaxEvents={2}
         weekends={true}
         nowIndicator={true}
         eventDisplay="block"

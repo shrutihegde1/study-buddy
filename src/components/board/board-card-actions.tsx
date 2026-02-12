@@ -18,6 +18,7 @@ import {
   ArrowRightCircle,
   ExternalLink,
   Trash2,
+  Timer,
 } from "lucide-react";
 import { BOARD_COLUMNS } from "@/lib/constants";
 import type { CalendarItem, ItemStatus } from "@/types";
@@ -26,12 +27,14 @@ interface BoardCardActionsProps {
   item: CalendarItem;
   onStatusChange: (id: string, status: ItemStatus) => void;
   onDelete: (id: string) => void;
+  onStartFocus?: (id: string, title: string) => void;
 }
 
 export function BoardCardActions({
   item,
   onStatusChange,
   onDelete,
+  onStartFocus,
 }: BoardCardActionsProps) {
   return (
     <DropdownMenu>
@@ -51,6 +54,14 @@ export function BoardCardActions({
           >
             <Play className="h-4 w-4 mr-2" />
             Start
+          </DropdownMenuItem>
+        )}
+        {item.status === "pending" && onStartFocus && (
+          <DropdownMenuItem
+            onClick={() => onStartFocus(item.id, item.title)}
+          >
+            <Timer className="h-4 w-4 mr-2" />
+            Start focus time
           </DropdownMenuItem>
         )}
         {item.status !== "completed" && (
